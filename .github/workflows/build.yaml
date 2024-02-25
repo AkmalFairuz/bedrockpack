@@ -10,6 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Go 1.21
+        uses: actions/setup-go@v4
+        with:
+            go-version: 1.21
+
       - name: Build bedrockpack
         run: GOOS=linux GOARCH=amd64 \
              go build -o bedrockpack main.go
@@ -25,6 +30,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Go 1.21
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
 
       - name: Build bedrockpack
         run: GOOS=windows GOARCH=amd64 \
