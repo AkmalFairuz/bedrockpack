@@ -1,0 +1,109 @@
+package main
+
+import (
+	"fmt"
+	"github.com/akmalfairuz/bedrockpack/pack"
+	"github.com/akmalfairuz/bedrockpack/stealer"
+	"os"
+)
+
+func printHelp() {
+	fmt.Println("Usage:")
+	fmt.Println("   bedrockpack decrypt <path to resource pack> <key>")
+	fmt.Println("      Decrypt resource pack with given key")
+	fmt.Println("   bedrockpack encrypt <path to resource pack> <key (optional)>")
+	fmt.Println("      Encrypt resource pack with given key or generated key")
+	fmt.Println("      Automatically minify all JSON files")
+	fmt.Println("      Automatically regenerate resource pack UUID in manifest.json")
+	fmt.Println("   bedrockpack steal <server ip:port>")
+	fmt.Println("      Steal resource pack from a server and automatically decrypting it")
+	fmt.Println("      Require Xbox authentication")
+}
+
+func main() {
+	args := os.Args[1:]
+	if len(args) == 0 {
+		printHelp()
+		return
+	}
+
+	switch args[0] {
+	case "encrypt":
+		if len(args) < 2 {
+			printHelp()
+			return
+		}
+
+		fmt.Println("Loading " + args[1] + " resource pack...")
+		rp, err := pack.LoadResourcePack(args[1])
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Backup resource pack...")
+		if err := rp.Save(args[1] + ".bak"); err != nil {
+			panic(err)
+		}
+
+		var key []byte
+		if len(args) > 2 {
+			key = []byte(args[2])
+		} else {
+			key = pack.GenerateKey()
+		}
+
+		fmt.Println("Regenerate resource pack UUID...")
+		if err := rp.RegenerateUUID(); err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Minifying JSON files in resource pack...")
+		if err := rp.MinifyJSONFiles(); err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Encrypting resource pack with key " + string(key) + "...")
+		if err := rp.Encrypt(key); err != nil {
+			panic(err)
+		}
+
+		if err := rp.Save(args[1]); err != nil {
+			panic(err)
+		}
+		_ = os.WriteFile(args[1]+".key.txt", key, 0777)
+		fmt.Println("Resource pack encrypted!")
+	case "decrypt":
+		if len(args) < 3 {
+			printHelp()
+			return
+		}
+
+		fmt.Println("Loading " + args[1] + " resource pack...")
+		rp, err := pack.LoadResourcePack(args[1])
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Backup resource pack...")
+		if err := rp.Save(args[1] + ".bak"); err != nil {
+			panic(err)
+		}
+
+		key := []byte(args[2])
+		fmt.Println("Decrypting resource pack with key " + string(key) + "...")
+		if err := rp.Decrypt(key); err != nil {
+			panic(err)
+		}
+
+		if err := rp.Save(args[1]); err != nil {
+			panic(err)
+		}
+		fmt.Println("Resource pack decrypted!")
+	case "steal":
+		if len(args) < 2 {
+			printHelp()
+			return
+		}
+		stealer.Run(args[1])
+	}
+}

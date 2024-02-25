@@ -1,0 +1,38 @@
+name: Build bedrockpack
+
+on:
+  - push
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Build bedrockpack
+        run: GOOS=linux GOARCH=amd64 \
+             go build -o bedrockpack main.go
+
+      - name: Upload bedrockpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: bedrockpack-linux
+          path: bedrockpack
+          retention-days: 30
+  windows:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Build bedrockpack
+        run: GOOS=windows GOARCH=amd64 \
+          go build -o bedrockpack main.go
+
+      - name: Upload bedrockpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: bedrockpack-windows
+          path: bedrockpack
+          retention-days: 30
