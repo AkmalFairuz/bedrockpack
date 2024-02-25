@@ -10,14 +10,14 @@ import (
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("   bedrockpack decrypt <path to resource pack> <key>")
-	fmt.Println("      Decrypt resource pack with given key")
+	fmt.Println("      Decrypt the resource pack using the given key")
 	fmt.Println("   bedrockpack encrypt <path to resource pack> <key (optional)>")
-	fmt.Println("      Encrypt resource pack with given key or generated key")
-	fmt.Println("      Automatically minify all JSON files")
-	fmt.Println("      Automatically regenerate resource pack UUID in manifest.json")
+	fmt.Println("      Encrypt the resource pack using either the given key or a generated key")
+	fmt.Println("      Automatically minify all the JSON files")
+	fmt.Println("      Automatically regenerate the UUID of the resource pack in manifest.json")
 	fmt.Println("   bedrockpack steal <server ip:port>")
-	fmt.Println("      Steal resource pack from a server and automatically decrypting it")
-	fmt.Println("      Require Xbox authentication")
+	fmt.Println("      Steal the resource pack from a server and decrypt it automatically")
+	fmt.Println("      Xbox authentication is required")
 }
 
 func main() {
