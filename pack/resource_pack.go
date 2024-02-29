@@ -229,7 +229,8 @@ func (r *ResourcePack) RegenerateUUID() error {
 		return err
 	}
 
-	manifest["header"].(map[string]any)["uuid"] = uuid.New().String()
+	newPackUuid := uuid.New().String()
+	manifest["header"].(map[string]any)["uuid"] = newPackUuid
 
 	modules, ok := manifest["modules"]
 	if ok {
@@ -244,6 +245,7 @@ func (r *ResourcePack) RegenerateUUID() error {
 		return err
 	}
 
+	r.uuid = newPackUuid
 	r.files["manifest.json"] = manifestBytes
 	return nil
 }
