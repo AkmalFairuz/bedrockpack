@@ -84,6 +84,10 @@ type contentJsonEntry struct {
 	Key  string `json:"key"`
 }
 
+func (r *ResourcePack) UUID() string {
+	return r.uuid
+}
+
 func (r *ResourcePack) Decrypt(key []byte) error {
 	if !r.encrypted {
 		return nil

@@ -56,6 +56,7 @@ func main() {
 		if err := rp.RegenerateUUID(); err != nil {
 			panic(err)
 		}
+		fmt.Printf("New resource pack UUID: %s\n", rp.UUID())
 
 		fmt.Println("Minifying JSON files in resource pack...")
 		if err := rp.MinifyJSONFiles(); err != nil {
