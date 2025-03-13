@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -44,6 +45,8 @@ func (r *ResourcePack) load(packBytes []byte) error {
 		return err
 	}
 
+	manifestFound := false
+
 	r.files = map[string][]byte{}
 	for _, fileInfo := range reader.File {
 		file, err := fileInfo.Open()
@@ -54,7 +57,7 @@ func (r *ResourcePack) load(packBytes []byte) error {
 		if err != nil {
 			return err
 		}
-		switch fileInfo.Name {
+		switch filepath.Base(fileInfo.Name) {
 		case "contents.json":
 			r.encrypted = true
 		case "manifest.json":
@@ -62,13 +65,18 @@ func (r *ResourcePack) load(packBytes []byte) error {
 			if err := json.Unmarshal(content, &manifest); err != nil {
 				return err
 			}
-			r.uuid = manifest["header"].(map[string]any)["uuid"].(string)
+			packUuid, ok := manifest["header"].(map[string]any)["uuid"].(string)
+			if !ok {
+				return errors.New("failed to parse manifest.json")
+			}
+			r.uuid = packUuid
+			manifestFound = true
 		}
 
 		r.files[fileInfo.Name] = content
 	}
 
-	if _, ok := r.files["manifest.json"]; !ok {
+	if !manifestFound {
 		return errors.New("manifest.json not found")
 	}
 
