@@ -134,6 +134,27 @@ func (r *ResourcePack) Decrypt(key []byte) error {
 	return nil
 }
 
+func (r *ResourcePack) CompressPNGFiles() error {
+	if r.encrypted {
+		return errors.New("pack is encrypted")
+	}
+
+	for fileName, fileBytes := range r.files {
+		if !strings.HasSuffix(fileName, ".png") {
+			continue
+		}
+		compressedBytes, err := compressPng(fileBytes)
+		if err != nil {
+			return err
+		}
+		if len(compressedBytes) < len(fileBytes) {
+			r.files[fileName] = compressedBytes
+			continue
+		}
+	}
+	return nil
+}
+
 func (r *ResourcePack) MinifyJSONFiles() error {
 	if r.encrypted {
 		return errors.New("pack is encrypted")

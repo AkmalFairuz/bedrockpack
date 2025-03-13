@@ -63,6 +63,11 @@ func main() {
 			panic(err)
 		}
 
+		fmt.Println("Compressing .png files in resource pack...")
+		if err := rp.CompressPNGFiles(); err != nil {
+			panic(err)
+		}
+
 		fmt.Println("Encrypting resource pack with key " + string(key) + "...")
 		if err := rp.Encrypt(key); err != nil {
 			panic(err)
