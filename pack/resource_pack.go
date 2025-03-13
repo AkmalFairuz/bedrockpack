@@ -46,6 +46,7 @@ func (r *ResourcePack) load(packBytes []byte) error {
 	}
 
 	manifestFound := false
+	basePath := ""
 
 	r.files = map[string][]byte{}
 	for _, fileInfo := range reader.File {
@@ -57,10 +58,7 @@ func (r *ResourcePack) load(packBytes []byte) error {
 		if err != nil {
 			return err
 		}
-		switch filepath.Base(fileInfo.Name) {
-		case "contents.json":
-			r.encrypted = true
-		case "manifest.json":
+		if filepath.Base(fileInfo.Name) == "manifest.json" {
 			var manifest map[string]any
 			if err := json.Unmarshal(content, &manifest); err != nil {
 				return err
@@ -71,13 +69,37 @@ func (r *ResourcePack) load(packBytes []byte) error {
 			}
 			r.uuid = packUuid
 			manifestFound = true
+			basePath = filepath.Dir(fileInfo.Name)
 		}
 
+		if fileInfo.Name == "" {
+			continue
+		}
 		r.files[fileInfo.Name] = content
 	}
 
 	if !manifestFound {
 		return errors.New("manifest.json not found")
+	}
+
+	if basePath != "." {
+		if !strings.HasSuffix(basePath, "/") {
+			basePath += "/"
+		}
+		for fileName, fileBytes := range r.files {
+			if strings.HasPrefix(fileName, basePath) {
+				newFileName := strings.TrimPrefix(fileName, basePath)
+				if newFileName == "" {
+					continue
+				}
+				r.files[newFileName] = fileBytes
+				delete(r.files, fileName)
+			}
+		}
+	}
+
+	if _, ok := r.files["contents.json"]; ok {
+		r.encrypted = true
 	}
 
 	return nil
