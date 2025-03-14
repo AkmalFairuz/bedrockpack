@@ -145,6 +145,10 @@ func (r *ResourcePack) Decrypt(key []byte) error {
 		return err
 	}
 
+	if len(contentsBytes) < 256 {
+		return errors.New("contents.json bytes is less than 256 bytes")
+	}
+
 	contentRaw := contentsBytes[256:]
 	decryptedContents, err := decryptCfb(contentRaw, key)
 	if err != nil {
