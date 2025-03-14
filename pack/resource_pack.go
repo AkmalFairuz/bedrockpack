@@ -63,9 +63,18 @@ func (r *ResourcePack) load(packBytes []byte) error {
 			if err := json.Unmarshal(content, &manifest); err != nil {
 				return err
 			}
+			if _, ok := manifest["header"]; !ok {
+				return errors.New("manifest.json header not found")
+			}
+			if _, ok := manifest["header"].(map[string]any); !ok {
+				return errors.New("manifest.json header is not a map[string]any")
+			}
+			if _, ok := manifest["header"].(map[string]any)["uuid"]; !ok {
+				return errors.New("manifest.json header uuid not found")
+			}
 			packUuid, ok := manifest["header"].(map[string]any)["uuid"].(string)
 			if !ok {
-				return errors.New("failed to parse manifest.json")
+				return errors.New("manifest.json header uuid is not a string")
 			}
 			r.uuid = packUuid
 			manifestFound = true
@@ -118,12 +127,25 @@ func (r *ResourcePack) UUID() string {
 	return r.uuid
 }
 
+func (r *ResourcePack) loadFile(fileName string) ([]byte, error) {
+	fileBytes, ok := r.files[fileName]
+	if !ok {
+		return nil, fmt.Errorf("file %s not found", fileName)
+	}
+	return fileBytes, nil
+}
+
 func (r *ResourcePack) Decrypt(key []byte) error {
 	if !r.encrypted {
 		return nil
 	}
 
-	contentRaw := r.files["contents.json"][256:]
+	contentsBytes, err := r.loadFile("contents.json")
+	if err != nil {
+		return err
+	}
+
+	contentRaw := contentsBytes[256:]
 	decryptedContents, err := decryptCfb(contentRaw, key)
 	if err != nil {
 		return err
@@ -279,28 +301,45 @@ func (r *ResourcePack) Save(path string) error {
 }
 
 func (r *ResourcePack) RegenerateUUID() error {
+	manifestBytes, err := r.loadFile("manifest.json")
+	if err != nil {
+		return err
+	}
+
 	var manifest map[string]any
-	if err := json.Unmarshal(r.files["manifest.json"], &manifest); err != nil {
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
 		return err
 	}
 
 	newPackUuid := uuid.New().String()
+
+	if _, ok := manifest["header"]; !ok {
+		return errors.New("manifest.json header not found")
+	}
+
+	if _, ok := manifest["header"].(map[string]any); !ok {
+		return errors.New("manifest.json header is not a map[string]any")
+	}
+
 	manifest["header"].(map[string]any)["uuid"] = newPackUuid
 
 	modules, ok := manifest["modules"]
 	if ok {
 		modules2 := modules.([]any)
 		for _, module := range modules2 {
+			if _, ok := module.(map[string]any); !ok {
+				return errors.New("manifest.json module is not a map[string]any")
+			}
 			module.(map[string]any)["uuid"] = uuid.New().String()
 		}
 	}
 
-	manifestBytes, err := json.Marshal(manifest)
+	manifestBytes2, err := json.Marshal(manifest)
 	if err != nil {
 		return err
 	}
 
 	r.uuid = newPackUuid
-	r.files["manifest.json"] = manifestBytes
+	r.files["manifest.json"] = manifestBytes2
 	return nil
 }
