@@ -241,12 +241,16 @@ func (r *ResourcePack) MinifyJSONFiles() error {
 		fileBytes = jsonReplaceRegex2.ReplaceAll(fileBytes, []byte(""))
 		var data any
 		if err := json.Unmarshal(fileBytes, &data); err != nil {
-			return err
+			// SKIP
+			//fmt.Println(err)
+			continue
 		}
 
 		minifiedJSON, err := json.Marshal(data)
 		if err != nil {
-			return err
+			// SKIP
+			//fmt.Println(err)
+			continue
 		}
 
 		r.files[fileName] = minifiedJSON

@@ -36,7 +36,7 @@ type OTFConfig struct {
 
 func (conf OTFConfig) New(log *slog.Logger, l *minecraft.Listener) *OTF {
 	return &OTF{
-		log:      log,
+		log:      log.With("pack_repo", conf.OrgName+"/"+conf.RepoName+":"+conf.Branch),
 		orgName:  conf.OrgName,
 		repoName: conf.RepoName,
 		branch:   conf.Branch,
@@ -79,11 +79,17 @@ func (o *OTF) tick() error {
 		return nil
 	}
 
+	if o.currentPackUUID != "" {
+		o.log.Info("detected pack update, updating pack", "new_commit_hash", commitHash)
+	}
+
+	o.log.Info("downloading pack")
 	packBytes, err := o.downloadRepoZip(commitHash)
 	if err != nil {
 		return fmt.Errorf("failed to download pack: %w", err)
 	}
 
+	o.log.Info("loading pack")
 	pack, err := LoadResourcePackFromBytes(packBytes)
 	if err != nil {
 		return fmt.Errorf("failed to load pack: %w", err)
@@ -95,22 +101,27 @@ func (o *OTF) tick() error {
 	packHash := pack.ComputeHash()
 	packKey := GenerateKeyFromSeed(packHash)
 
+	o.log.Info("generating uuid")
 	if err := pack.RegenerateUUID(packHash); err != nil {
 		return fmt.Errorf("failed to regenerate pack UUID: %w", err)
 	}
 
+	o.log.Info("minifying json files")
 	if err := pack.MinifyJSONFiles(); err != nil {
 		return fmt.Errorf("failed to minify JSON files: %w", err)
 	}
 
+	o.log.Info("compressing png files")
 	if err := pack.CompressPNGFiles(); err != nil {
 		return fmt.Errorf("failed to compress PNG files: %w", err)
 	}
 
+	o.log.Info("encrypting pack", "pack_key", packKey)
 	if err := pack.Encrypt(packKey); err != nil {
 		return fmt.Errorf("failed to encrypt pack: %w", err)
 	}
 
+	o.log.Info("saving pack")
 	compiledPackBytes, err := pack.SaveToBytes()
 	if err != nil {
 		return fmt.Errorf("failed to save pack: %w", err)
@@ -118,6 +129,7 @@ func (o *OTF) tick() error {
 
 	packBytes = nil // free memory
 
+	o.log.Info("compiling pack")
 	compiledPack, err := resource.Read(bytes.NewBuffer(compiledPackBytes))
 	if err != nil {
 		return fmt.Errorf("failed to read pack: %w", err)
@@ -125,6 +137,7 @@ func (o *OTF) tick() error {
 
 	compiledPackBytes = nil // free memory
 
+	o.log.Info("pack updated")
 	if o.currentPackUUID != "" {
 		o.listener.RemoveResourcePack(o.currentPackUUID)
 	}

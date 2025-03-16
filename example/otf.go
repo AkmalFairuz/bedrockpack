@@ -9,7 +9,7 @@ import (
 func main() {
 	log := slog.Default()
 
-	listener, err := minecraft.Listen("raknet", ":19132")
+	listener, err := minecraft.Listen("raknet", "127.0.0.1:19132")
 	if err != nil {
 		panic(err)
 	}
