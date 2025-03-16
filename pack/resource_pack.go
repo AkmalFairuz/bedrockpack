@@ -203,19 +203,21 @@ func (r *ResourcePack) CompressPNGFiles() error {
 	return nil
 }
 
+var (
+	jsonReplaceRegex1 = regexp.MustCompile(`(?im)^\s+\/\/.*$`)
+	jsonReplaceRegex2 = regexp.MustCompile(`(?im)\/\/[^"\[\]]+$`)
+)
+
 func (r *ResourcePack) MinifyJSONFiles() error {
 	if r.encrypted {
 		return errors.New("pack is encrypted")
 	}
-
-	re1 := regexp.MustCompile(`(?im)^\s+\/\/.*$`)
-	re2 := regexp.MustCompile(`(?im)\/\/[^"\[\]]+$`)
 	for fileName, fileBytes := range r.files {
 		if !strings.HasSuffix(fileName, ".json") {
 			continue
 		}
-		fileBytes = re1.ReplaceAll(fileBytes, []byte(""))
-		fileBytes = re2.ReplaceAll(fileBytes, []byte(""))
+		fileBytes = jsonReplaceRegex1.ReplaceAll(fileBytes, []byte(""))
+		fileBytes = jsonReplaceRegex2.ReplaceAll(fileBytes, []byte(""))
 		var data any
 		if err := json.Unmarshal(fileBytes, &data); err != nil {
 			return err
@@ -329,7 +331,10 @@ func (r *ResourcePack) RegenerateUUID() error {
 
 	modules, ok := manifest["modules"]
 	if ok {
-		modules2 := modules.([]any)
+		modules2, ok := modules.([]any)
+		if !ok {
+			return errors.New("manifest.json modules is not a []any")
+		}
 		for _, module := range modules2 {
 			if _, ok := module.(map[string]any); !ok {
 				return errors.New("manifest.json module is not a map[string]any")
