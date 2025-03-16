@@ -1,5 +1,5 @@
 # bedrockpack
-A Minecraft Bedrock tool for decrypting, encrypting, and stealing resource packs!
+A Minecraft Bedrock tool for decrypting, encrypting, managing, and stealing resource packs!
 
 ## Download
 https://github.com/AkmalFairuz/bedrockpack/releases/
@@ -24,3 +24,15 @@ bedrockpack encrypt <path to resource pack> <key (optional)>
 ```
 bedrockpack steal <server ip:port>
 ```
+
+## On The Fly Resource Pack
+
+This feature allows servers to download a resource pack from a GitHub repository and apply it.
+
+See [example/otf.go](example/otf.go)
+
+### Features 
+- UUID are automatically generated based on the pack content
+- Automatically encrypt the pack and the encryption key are generated based on the pack content
+- Automatically minify all the JSON files
+- Automatically compress .png files with the best compression level.

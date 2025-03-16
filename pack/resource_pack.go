@@ -3,11 +3,12 @@ package pack
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -125,6 +126,26 @@ type contentJsonEntry struct {
 
 func (r *ResourcePack) UUID() string {
 	return r.uuid
+}
+
+func (r *ResourcePack) DeleteFile(fileName string) {
+	delete(r.files, fileName)
+}
+
+func (r *ResourcePack) DeleteFilesByPrefix(prefix string) {
+	for fileName := range r.files {
+		if strings.HasPrefix(fileName, prefix) {
+			delete(r.files, fileName)
+		}
+	}
+}
+
+func (r *ResourcePack) DeleteFilesBySuffix(suffix string) {
+	for fileName := range r.files {
+		if strings.HasSuffix(fileName, suffix) {
+			delete(r.files, fileName)
+		}
+	}
 }
 
 func (r *ResourcePack) loadFile(fileName string) ([]byte, error) {
@@ -285,6 +306,27 @@ func (r *ResourcePack) Encrypt(key []byte) error {
 	return nil
 }
 
+func (r *ResourcePack) ComputeHash() []byte {
+	toHash := bytes.Buffer{}
+	fileLen := make([]byte, 4)
+	binary.BigEndian.PutUint32(fileLen, uint32(len(r.files)))
+	toHash.Write(fileLen)
+
+	for fileName, fileBytes := range r.files {
+		fileNameLen := make([]byte, 2)
+		binary.BigEndian.PutUint16(fileNameLen, uint16(len(fileName)))
+		toHash.Write(fileNameLen)
+		toHash.WriteString(fileName)
+
+		fileBytesLen := make([]byte, 4)
+		binary.BigEndian.PutUint32(fileBytesLen, uint32(len(fileBytes)))
+		toHash.Write(fileBytesLen)
+		toHash.Write(fileBytes)
+	}
+
+	return sha256(toHash.Bytes())
+}
+
 func (r *ResourcePack) Save(path string) error {
 	zipFile, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
@@ -306,7 +348,41 @@ func (r *ResourcePack) Save(path string) error {
 	return arc.Close()
 }
 
-func (r *ResourcePack) RegenerateUUID() error {
+// SaveToBytes returns the zip file as a byte slice without creating a file
+func (r *ResourcePack) SaveToBytes() ([]byte, error) {
+	var buf bytes.Buffer
+	arc := zip.NewWriter(&buf)
+
+	for fileName, fileBytes := range r.files {
+		w, err := arc.Create(fileName)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write(fileBytes); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := arc.Close(); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (r *ResourcePack) RegenerateUUID(seed []byte) error {
+	if seed == nil {
+		seed = make([]byte, 16)
+		for i := 0; i < 16; i++ {
+			seed[i] = byte(rand.Intn(256))
+		}
+	}
+
+	if len(seed) < 16 {
+		// zero fill
+		seed = append(seed, make([]byte, 16-len(seed))...)
+	}
+
 	manifestBytes, err := r.loadFile("manifest.json")
 	if err != nil {
 		return err
@@ -317,7 +393,9 @@ func (r *ResourcePack) RegenerateUUID() error {
 		return err
 	}
 
-	newPackUuid := uuid.New().String()
+	mod := 0
+	newPackUuid := uuidFromSeed(seed, mod)
+	mod++
 
 	if _, ok := manifest["header"]; !ok {
 		return errors.New("manifest.json header not found")
@@ -339,7 +417,8 @@ func (r *ResourcePack) RegenerateUUID() error {
 			if _, ok := module.(map[string]any); !ok {
 				return errors.New("manifest.json module is not a map[string]any")
 			}
-			module.(map[string]any)["uuid"] = uuid.New().String()
+			module.(map[string]any)["uuid"] = uuidFromSeed(seed, mod)
+			mod++
 		}
 	}
 

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/akmalfairuz/bedrockpack/internal/stealer"
 	"github.com/akmalfairuz/bedrockpack/pack"
-	"github.com/akmalfairuz/bedrockpack/stealer"
 	"os"
 )
 
@@ -53,7 +53,7 @@ func main() {
 		}
 
 		fmt.Println("Regenerate resource pack UUID...")
-		if err := rp.RegenerateUUID(); err != nil {
+		if err := rp.RegenerateUUID(nil); err != nil {
 			panic(err)
 		}
 		fmt.Printf("New resource pack UUID: %s\n", rp.UUID())

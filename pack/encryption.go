@@ -52,3 +52,14 @@ func GenerateKey() []byte {
 
 	return result
 }
+
+func GenerateKeyFromSeed(seed []byte) []byte {
+	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 32
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		result[i] = chars[int(seed[i%len(seed)])%len(chars)]
+	}
+
+	return result
+}
