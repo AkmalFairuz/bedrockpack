@@ -27,11 +27,11 @@ bedrockpack steal <server ip:port>
 
 ## On The Fly Resource Pack
 
-This feature allows servers to download a resource pack from a GitHub repository and apply it.
+This feature allows servers to use resource packs from a GitHub repository. The server will monitor the repository for changes and automatically update the resource pack on the server. This is useful for servers that want to use a custom resource pack without having to manually upload it to the server and restarting the server.
 
 See [example/otf.go](example/otf.go)
 
-### Features 
+### Features
 - UUID are automatically generated based on the pack content
 - Automatically encrypt the pack and the encryption key are generated based on the pack content
 - Automatically minify all the JSON files
