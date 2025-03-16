@@ -137,7 +137,7 @@ func (o *OTF) tick() error {
 
 	compiledPackBytes = nil // free memory
 
-	o.log.Info("pack updated")
+	o.log.Info("pack updated", "pack_uuid", compiledPack.UUID().String())
 	if o.currentPackUUID != "" {
 		o.listener.RemoveResourcePack(o.currentPackUUID)
 	}

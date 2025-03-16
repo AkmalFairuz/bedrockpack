@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -313,10 +314,19 @@ func (r *ResourcePack) Encrypt(key []byte) error {
 func (r *ResourcePack) ComputeHash() []byte {
 	toHash := bytes.Buffer{}
 	fileLen := make([]byte, 4)
-	binary.BigEndian.PutUint32(fileLen, uint32(len(r.files)))
+
+	fileNames := make([]string, 0, len(r.files))
+	for fileName := range r.files {
+		fileNames = append(fileNames, fileName)
+	}
+	sort.Strings(fileNames)
+
+	binary.BigEndian.PutUint32(fileLen, uint32(len(fileNames)))
 	toHash.Write(fileLen)
 
-	for fileName, fileBytes := range r.files {
+	for _, fileName := range fileNames {
+		fileBytes := r.files[fileName]
+
 		fileNameLen := make([]byte, 2)
 		binary.BigEndian.PutUint16(fileNameLen, uint16(len(fileName)))
 		toHash.Write(fileNameLen)
