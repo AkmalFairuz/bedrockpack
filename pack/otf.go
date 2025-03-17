@@ -21,6 +21,7 @@ type OTF struct {
 	// pat is personal access token
 	pat               string
 	currentPackCommit string
+	currentPackKey    string
 	currentPack       *resource.Pack
 }
 
@@ -138,14 +139,16 @@ func (o *OTF) tick() error {
 	compiledPackBytes = nil // free memory
 
 	o.log.Info("pack updated", "pack_uuid", compiledPack.UUID().String())
+	o.currentPackKey = string(packKey)
+	o.currentPackCommit = commitHash
+	o.currentPack = compiledPack
+
 	if o.listener != nil {
 		if o.currentPack != nil {
 			o.listener.RemoveResourcePack(o.currentPack.UUID().String())
 		}
-		o.listener.AddResourcePack(compiledPack.WithContentKey(string(packKey)))
+		o.addPackToListener()
 	}
-	o.currentPackCommit = commitHash
-	o.currentPack = compiledPack
 
 	return nil
 }
@@ -153,9 +156,15 @@ func (o *OTF) tick() error {
 // SetListener ...
 func (o *OTF) SetListener(listener *minecraft.Listener) {
 	o.listener = listener
-	if o.listener != nil && o.currentPack != nil {
-		o.listener.AddResourcePack(o.currentPack)
+	o.addPackToListener()
+}
+
+// addPackToListener adds the pack to the listener.
+func (o *OTF) addPackToListener() {
+	if o.listener == nil || o.currentPack == nil {
+		return
 	}
+	o.listener.AddResourcePack(o.currentPack)
 }
 
 // Listener ...
