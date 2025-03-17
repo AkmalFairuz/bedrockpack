@@ -164,7 +164,7 @@ func (o *OTF) addPackToListener() {
 	if o.listener == nil || o.currentPack == nil {
 		return
 	}
-	o.listener.AddResourcePack(o.currentPack)
+	o.listener.AddResourcePack(o.currentPack.WithContentKey(o.currentPackKey))
 }
 
 // Listener ...
