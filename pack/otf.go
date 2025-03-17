@@ -19,8 +19,9 @@ type OTF struct {
 	repoName string
 	branch   string
 	// pat is personal access token
-	pat             string
-	currentPackUUID string
+	pat               string
+	currentPackCommit string
+	currentPack       *resource.Pack
 }
 
 const (
@@ -34,14 +35,13 @@ type OTFConfig struct {
 	PAT      string
 }
 
-func (conf OTFConfig) New(log *slog.Logger, l *minecraft.Listener) *OTF {
+func (conf OTFConfig) New(log *slog.Logger) *OTF {
 	return &OTF{
 		log:      log.With("pack_repo", conf.OrgName+"/"+conf.RepoName+":"+conf.Branch),
 		orgName:  conf.OrgName,
 		repoName: conf.RepoName,
 		branch:   conf.Branch,
 		pat:      conf.PAT,
-		listener: l,
 	}
 }
 
@@ -75,11 +75,11 @@ func (o *OTF) tick() error {
 		return fmt.Errorf("failed to get last commit: %w", err)
 	}
 
-	if o.currentPackUUID == commitHash {
+	if o.currentPackCommit == commitHash {
 		return nil
 	}
 
-	if o.currentPackUUID != "" {
+	if o.currentPackCommit != "" {
 		o.log.Info("detected pack update, updating pack", "new_commit_hash", commitHash)
 	}
 
@@ -138,13 +138,29 @@ func (o *OTF) tick() error {
 	compiledPackBytes = nil // free memory
 
 	o.log.Info("pack updated", "pack_uuid", compiledPack.UUID().String())
-	if o.currentPackUUID != "" {
-		o.listener.RemoveResourcePack(o.currentPackUUID)
+	if o.listener != nil {
+		if o.currentPack != nil {
+			o.listener.RemoveResourcePack(o.currentPack.UUID().String())
+		}
+		o.listener.AddResourcePack(compiledPack)
 	}
-	o.listener.AddResourcePack(compiledPack)
-	o.currentPackUUID = compiledPack.UUID().String()
+	o.currentPackCommit = commitHash
+	o.currentPack = compiledPack
 
 	return nil
+}
+
+// SetListener ...
+func (o *OTF) SetListener(listener *minecraft.Listener) {
+	o.listener = listener
+	if o.listener != nil && o.currentPack != nil {
+		o.listener.AddResourcePack(o.currentPack)
+	}
+}
+
+// Listener ...
+func (o *OTF) Listener() *minecraft.Listener {
+	return o.listener
 }
 
 // initializeHeaders sets the necessary headers for the HTTP request.
