@@ -330,7 +330,7 @@ func (r *ResourcePack) ComputeHash() []byte {
 		fileNameLen := make([]byte, 2)
 		binary.BigEndian.PutUint16(fileNameLen, uint16(len(fileName)))
 		toHash.Write(fileNameLen)
-		toHash.WriteString(fileName)
+		toHash.WriteString(strings.ReplaceAll(fileName, "\\", "/"))
 
 		fileBytesLen := make([]byte, 4)
 		binary.BigEndian.PutUint32(fileBytesLen, uint32(len(fileBytes)))
