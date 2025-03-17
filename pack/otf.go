@@ -139,13 +139,17 @@ func (o *OTF) tick() error {
 	compiledPackBytes = nil // free memory
 
 	o.log.Info("pack updated", "pack_uuid", compiledPack.UUID().String())
+	var prevPackUUID string
+	if o.currentPack != nil {
+		prevPackUUID = o.currentPack.UUID().String()
+	}
 	o.currentPackKey = string(packKey)
 	o.currentPackCommit = commitHash
 	o.currentPack = compiledPack
 
 	if o.listener != nil {
-		if o.currentPack != nil {
-			o.listener.RemoveResourcePack(o.currentPack.UUID().String())
+		if prevPackUUID != "" {
+			o.listener.RemoveResourcePack(prevPackUUID)
 		}
 		o.addPackToListener()
 	}

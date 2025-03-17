@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/sandertv/gophertunnel v1.44.1-0.20250312143112-67b1aa6edbe7
+	github.com/sandertv/gophertunnel v1.44.1-0.20250228152750-9a988d58ee2d
 	golang.org/x/oauth2 v0.28.0
 )
 
