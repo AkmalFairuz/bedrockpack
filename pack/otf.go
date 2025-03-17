@@ -98,14 +98,6 @@ func (o *OTF) tick() error {
 	pack.DeleteFile("README.md")
 	pack.DeleteFilesByPrefix(".git") // .github, .gitignore, etc.
 
-	packHash := pack.ComputeHash()
-	packKey := GenerateKeyFromSeed(packHash)
-
-	o.log.Info("generating uuid")
-	if err := pack.RegenerateUUID(packHash); err != nil {
-		return fmt.Errorf("failed to regenerate pack UUID: %w", err)
-	}
-
 	o.log.Info("minifying json files")
 	if err := pack.MinifyJSONFiles(); err != nil {
 		return fmt.Errorf("failed to minify JSON files: %w", err)
@@ -116,7 +108,15 @@ func (o *OTF) tick() error {
 		return fmt.Errorf("failed to compress PNG files: %w", err)
 	}
 
-	o.log.Info("encrypting pack", "pack_key", packKey)
+	packHash := pack.ComputeHash()
+	packKey := GenerateKeyFromSeed(packHash)
+
+	o.log.Info("generating uuid")
+	if err := pack.RegenerateUUID(packHash); err != nil {
+		return fmt.Errorf("failed to regenerate pack UUID: %w", err)
+	}
+
+	o.log.Info("encrypting pack", "pack_key", string(packKey))
 	if err := pack.Encrypt(packKey); err != nil {
 		return fmt.Errorf("failed to encrypt pack: %w", err)
 	}
@@ -141,7 +141,7 @@ func (o *OTF) tick() error {
 	if o.currentPackUUID != "" {
 		o.listener.RemoveResourcePack(o.currentPackUUID)
 	}
-	o.listener.AddResourcePack(compiledPack)
+	o.listener.AddResourcePack(compiledPack.WithContentKey(string(packKey)))
 	o.currentPackUUID = compiledPack.UUID().String()
 
 	return nil
