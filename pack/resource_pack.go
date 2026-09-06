@@ -342,7 +342,7 @@ func (r *ResourcePack) ComputeHash() []byte {
 }
 
 func (r *ResourcePack) Save(path string) error {
-	zipFile, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0777)
+	zipFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
