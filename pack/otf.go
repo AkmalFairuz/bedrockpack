@@ -23,6 +23,7 @@ type OTF struct {
 	currentPackCommit string
 	currentPackKey    string
 	currentPack       *resource.Pack
+	tickerInterval    time.Duration
 }
 
 const (
@@ -30,19 +31,21 @@ const (
 )
 
 type OTFConfig struct {
-	OrgName  string
-	RepoName string
-	Branch   string
-	PAT      string
+	OrgName        string
+	RepoName       string
+	Branch         string
+	PAT            string
+	TickerInterval time.Duration
 }
 
 func (conf OTFConfig) New(log *slog.Logger) *OTF {
 	return &OTF{
-		log:      log.With("pack_repo", conf.OrgName+"/"+conf.RepoName+":"+conf.Branch),
-		orgName:  conf.OrgName,
-		repoName: conf.RepoName,
-		branch:   conf.Branch,
-		pat:      conf.PAT,
+		log:            log.With("pack_repo", conf.OrgName+"/"+conf.RepoName+":"+conf.Branch),
+		orgName:        conf.OrgName,
+		repoName:       conf.RepoName,
+		branch:         conf.Branch,
+		pat:            conf.PAT,
+		tickerInterval: conf.TickerInterval,
 	}
 }
 
@@ -54,7 +57,11 @@ func (o *OTF) Start() error {
 	}
 
 	// then start the ticker
-	ticker := time.NewTicker(10 * time.Minute)
+	interval := o.tickerInterval
+	if interval == 0 {
+		interval = 10 * time.Minute
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	go func() {
 		for {
