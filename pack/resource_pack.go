@@ -362,6 +362,37 @@ func (r *ResourcePack) Save(path string) error {
 	return arc.Close()
 }
 
+// SaveDirectory writes the pack files to a new directory. It rejects paths that
+// could escape the destination directory when extracted.
+func (r *ResourcePack) SaveDirectory(dir string) error {
+	if r.encrypted {
+		return errors.New("cannot save an encrypted pack as files")
+	}
+	if err := os.Mkdir(dir, 0700); err != nil {
+		return err
+	}
+	for fileName, fileBytes := range r.files {
+		fileName = strings.ReplaceAll(fileName, "\\", "/")
+		if !filepath.IsLocal(fileName) || fileName == "." {
+			return fmt.Errorf("unsafe resource pack path: %q", fileName)
+		}
+		filePath := filepath.Join(dir, filepath.FromSlash(fileName))
+		if strings.HasSuffix(fileName, "/") {
+			if err := os.MkdirAll(filePath, 0700); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
+			return err
+		}
+		if err := os.WriteFile(filePath, fileBytes, 0600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SaveToBytes returns the zip file as a byte slice without creating a file
 func (r *ResourcePack) SaveToBytes() ([]byte, error) {
 	var buf bytes.Buffer
